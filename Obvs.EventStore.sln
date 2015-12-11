@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obvs.EventStore", "Obvs.EventStore\Obvs.EventStore.csproj", "{97D38FDE-A767-4558-A752-F72590C9FE97}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Obvs.EventStore.Tests", "Obvs.EventStore.Tests\Obvs.EventStore.Tests.csproj", "{4A6C9341-1DD8-4148-9782-97787D6966A9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97D38FDE-A767-4558-A752-F72590C9FE97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97D38FDE-A767-4558-A752-F72590C9FE97}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97D38FDE-A767-4558-A752-F72590C9FE97}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97D38FDE-A767-4558-A752-F72590C9FE97}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A6C9341-1DD8-4148-9782-97787D6966A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A6C9341-1DD8-4148-9782-97787D6966A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A6C9341-1DD8-4148-9782-97787D6966A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A6C9341-1DD8-4148-9782-97787D6966A9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
