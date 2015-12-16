@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using EventStore.ClientAPI;
 using Obvs.Serialization;
 using ProtoBuf;
 
@@ -13,18 +15,18 @@ namespace Obvs.EventStore
         where TMessage : class
     {
         private readonly IDictionary<string, IMessageDeserializer<TMessage>> _deserializers;
-        private readonly KafkaConfiguration _kafkaConfig;
+        private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
         private readonly string _topicName;
 
-        private readonly KafkaSourceConfiguration _sourceConfig;
+        private readonly EventStoreSourceConfig _sourceConfig;
 
-        public MessageSource(KafkaConfiguration kafkaConfig,
-            KafkaSourceConfiguration sourceConfig, 
+        public MessageSource(AsyncLazy<IEventStoreConnection> lazyConnection,
+            EventStoreSourceConfig sourceConfig, 
             string topicName,
             IEnumerable<IMessageDeserializer<TMessage>> deserializers)
         {
             _deserializers = deserializers.ToDictionary(d => d.GetTypeName());
-            _kafkaConfig = kafkaConfig;
+            _lazyConnection = lazyConnection;
             _topicName = topicName;
             _sourceConfig = sourceConfig;
         }
@@ -33,39 +35,26 @@ namespace Obvs.EventStore
         {
             get
             {
-                return Observable.Create<TMessage>(observer =>
+                return Observable.Create<TMessage>(async observer =>
                 {
-                    var consumerConfiguration = new ConsumerConfiguration(
-                        _kafkaConfig.SeedAddresses, 
-                        _topicName,
-                        new StartPositionTopicEnd(), // always start at end of stream - ActiveMQ topic behaviour.
-                        maxWaitTimeMs: 1000,
-                        minBytesPerFetch: _sourceConfig.MinBytesPerFetch,
-                        maxBytesPerFetch: _sourceConfig.MaxBytesPerFetch,
-                        lowWatermark: 500,
-                        highWatermark: 2000,
-                        useFlowControl: false,
-                        stopPosition: null,
-                        scheduler: Scheduler.Default);
+                    var subject = new Subject<ResolvedEvent>();
 
-                    var consumer = new Consumer(consumerConfiguration);
+                    var subscription = await (await _lazyConnection).SubscribeToStreamAsync(_topicName, true,
+                        (sub, msg) => subject.OnNext(msg), (sub, reason, ex) => subject.OnError(ex));
 
-                    return consumer
-                        .OnMessageArrived
+                    return subject
                         .Select(Deserialize)
+                        .Finally(() => { try { subscription.Dispose(); } catch { } })
                         .Subscribe(observer);
                 });
             }
         }
 
-
-        private TMessage Deserialize(ReceivedMessage message)
+        private TMessage Deserialize(ResolvedEvent message)
         {
-            KafkaHeaderedMessage headeredMessage = Serializer.Deserialize<KafkaHeaderedMessage>(KafkaHeaderedMessage.ToStream(message.Value));
+            IMessageDeserializer<TMessage> deserializer = _deserializers[message.Event.EventType];
 
-            IMessageDeserializer<TMessage> deserializer = _deserializers[headeredMessage.PayloadType];
-
-            TMessage deserializedMessage = deserializer.Deserialize(new MemoryStream(headeredMessage.Payload));
+            TMessage deserializedMessage = deserializer.Deserialize(new MemoryStream(message.Event.Data));
 
             return deserializedMessage;
         }
