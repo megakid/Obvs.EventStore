@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using EventStore.ClientAPI;
@@ -18,10 +19,10 @@ namespace Obvs.EventStore
         private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
         private readonly string _topicName;
 
-        private readonly EventStoreSourceConfig _sourceConfig;
+        private readonly EventStoreSourceConfiguration _sourceConfig;
 
         public MessageSource(AsyncLazy<IEventStoreConnection> lazyConnection,
-            EventStoreSourceConfig sourceConfig, 
+            EventStoreSourceConfiguration sourceConfig, 
             string topicName,
             IEnumerable<IMessageDeserializer<TMessage>> deserializers)
         {
@@ -35,17 +36,20 @@ namespace Obvs.EventStore
         {
             get
             {
-                return Observable.Create<TMessage>(async observer =>
+                return Observable.Create<TMessage>(observer =>
                 {
                     var subject = new Subject<ResolvedEvent>();
 
-                    var subscription = await (await _lazyConnection).SubscribeToStreamAsync(_topicName, true,
-                        (sub, msg) => subject.OnNext(msg), (sub, reason, ex) => subject.OnError(ex));
-
-                    return subject
+                    var subscription = subject
                         .Select(Deserialize)
-                        .Finally(() => { try { subscription.Dispose(); } catch { } })
                         .Subscribe(observer);
+
+                    var eventStoreConnection = _lazyConnection.Value.Result;
+
+                    var esStream = eventStoreConnection.SubscribeToStreamAsync(_topicName, true,
+                        (sub, msg) => subject.OnNext(msg), (sub, reason, ex) => subject.OnError(ex)).Result;
+                    
+                    return new CompositeDisposable(subscription, esStream);
                 });
             }
         }

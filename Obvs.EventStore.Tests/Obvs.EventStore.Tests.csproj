@@ -100,14 +100,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CompareWithActiveMQ.cs" />
-    <Compile Include="Kafka4NetTests.cs" />
+    <Compile Include="CompareWithActiveMQTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Obvs.EventStore\Obvs.EventStore.csproj">
+      <Project>{97D38FDE-A767-4558-A752-F72590C9FE97}</Project>
+      <Name>Obvs.EventStore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

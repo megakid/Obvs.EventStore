@@ -9,16 +9,16 @@ using NLog.Config;
 using NLog.Targets;
 using NUnit.Framework;
 using Obvs.Configuration;
-using Obvs.Kafka.Configuration;
+using Obvs.EventStore.Configuration;
 using Obvs.Serialization.Json.Configuration;
 using Obvs.Types;
 
-namespace Obvs.Kafka.Tests
+namespace Obvs.EventStore.Tests
 {
     [TestFixture]
-    public class CompareWithActiveMQ
+    public class CompareWithActiveMQTests
     {
-        string _kafkaAddresses = "192.168.99.102";
+        string _eventStoreConnectionString = "ConnectTo=tcp://admin:changeit@192.168.99.100:1113";
         string _activeMqUri = "failover:(tcp://192.168.99.102:61616)";
 
          Random _rnd = new Random();
@@ -44,35 +44,32 @@ namespace Obvs.Kafka.Tests
             // Step 5. Activate the configuration
             NLog.LogManager.Configuration = config;
 
-            kafka4net.Logger.SetupNLog();
+            //kafka4net.Logger.SetupNLog();
         }
 
 
         [Explicit]
         [Test]
-        [TestCase(10000, 10)]
-        public async Task TestServiceBusWithRemoteKafka(int count, int watchers)
+        [TestCase(2000, 10)]
+        public async Task TestServiceBusWithRemoteEventStore(int count, int watchers)
         {
             var tasks = Enumerable.Range(0, watchers)
                 .Select(i => StartWatcher(i, count))
                 .ToArray();
 
-            Thread.Sleep(5000);
-
             await SendCommands(count);
 
             await Task.WhenAll(tasks);
-            
         }
 
         private async Task SendCommands(int count)
         {
             IServiceBus serviceBus = ServiceBus.Configure()
-                .WithKafkaEndpoints<ITestMessage1>()
+                .WithEventStoreEndpoints<ITestMessage1>()
                     .Named("Obvs.TestService")
-                    .WithKafkaSourceConfiguration(new KafkaSourceConfiguration())
-                    .WithKafkaProducerConfiguration(new KafkaProducerConfiguration())
-                    .ConnectToKafka(_kafkaAddresses)
+                    .WithEventStoreSourceConfiguration(new EventStoreSourceConfiguration())
+                    .WithEventStoreProducerConfiguration(new EventStoreProducerConfiguration())
+                    .ConnectToEventStore(_eventStoreConnectionString)
                     .SerializedAsJson()
                     .AsClient()
                 //.UsingConsoleLogging()
@@ -85,8 +82,8 @@ namespace Obvs.Kafka.Tests
 
             await Task.WhenAll(sendTasks);
 
-            _sw = Stopwatch.StartNew();
             Console.WriteLine($"###$$$$### Sends: {sw.ElapsedMilliseconds}ms");
+            _sw = Stopwatch.StartNew();
 
             ((IDisposable)serviceBus).Dispose();
         }
@@ -94,9 +91,9 @@ namespace Obvs.Kafka.Tests
         private Task StartWatcher(int i, int count)
         {
             IServiceBus serviceBus = ServiceBus.Configure()
-                .WithKafkaEndpoints<ITestMessage1>()
+                .WithEventStoreEndpoints<ITestMessage1>()
                     .Named("Obvs.TestService")
-                    .ConnectToKafka(_kafkaAddresses)
+                    .ConnectToEventStore(_eventStoreConnectionString)
                     .SerializedAsJson()
                     .AsServer()
                 //.UsingConsoleLogging()
@@ -105,10 +102,11 @@ namespace Obvs.Kafka.Tests
             double?[] times = new double?[count];
             long[] received = { 0 };
 
-
             var dis = serviceBus.Commands.OfType<TestCommand>().Subscribe(x =>
             {
-                Interlocked.Increment(ref received[0]);
+                var increment = Interlocked.Increment(ref received[0]);
+                if (increment % 100 == 0)
+                    Console.WriteLine($"Watcher {i}: {increment} msgs");
                 var ms = (Stopwatch.GetTimestamp() - x.Ticks) / ((double) Stopwatch.Frequency / 1000);
                 times[x.Id] = ms;
             });

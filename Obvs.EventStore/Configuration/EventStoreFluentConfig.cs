@@ -3,33 +3,33 @@ using System.Reflection;
 using Obvs.Configuration;
 using Obvs.Serialization;
 
-namespace Obvs.Kafka.Configuration
+namespace Obvs.EventStore.Configuration
 {
-    public interface ICanSpecifyKafkaServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>
+    public interface ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TCommand : class, TMessage
         where TEvent : class, TMessage
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName);
+        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName);
     }
 
 
-    public interface ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> : ICanSpecifyKafkaServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>
+    public interface ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> : ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TCommand : class, TMessage
         where TEvent : class, TMessage
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithKafkaProducerConfiguration(EventStoreProducerConfig kafkaProducerConfiguration);
-        ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithKafkaSourceConfiguration(KafkaSourceConfiguration kafkaSourceConfiguration);
-        ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToKafka(string connectionString);
+        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreProducerConfiguration(EventStoreProducerConfiguration eventStoreProducerConfiguration);
+        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreSourceConfiguration(EventStoreSourceConfiguration eventStoreSourceConfiguration);
+        ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString);
     }
 
-    internal class KafkaFluentConfig<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> :
-        ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse>,
+    internal class EventStoreFluentConfig<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> :
+        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse>,
         ICanCreateEndpointAsClientOrServer<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TServiceMessage : class 
@@ -45,15 +45,15 @@ namespace Obvs.Kafka.Configuration
         private IMessageDeserializerFactory _deserializerFactory;
         private Func<Assembly, bool> _assemblyFilter;
         private Func<Type, bool> _typeFilter;
-        private EventStoreProducerConfig _kafkaProducerConfig;
-        private KafkaSourceConfiguration _kafkaSourceConfig;
+        private EventStoreProducerConfiguration _eventStoreProducerConfiguration;
+        private EventStoreSourceConfiguration _eventStoreSourceConfig;
 
-        public KafkaFluentConfig(ICanAddEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> canAddEndpoint)
+        public EventStoreFluentConfig(ICanAddEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> canAddEndpoint)
         {
             _canAddEndpoint = canAddEndpoint;
         }
 
-        public ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName)
+        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName)
         {
             _serviceName = serviceName;
             return this;
@@ -66,15 +66,15 @@ namespace Obvs.Kafka.Configuration
             return this;
         }
 
-        public ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithKafkaProducerConfiguration(EventStoreProducerConfig kafkaProducerConfiguration)
+        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreProducerConfiguration(EventStoreProducerConfiguration eventStoreProducerConfiguration)
         {
-            _kafkaProducerConfig = kafkaProducerConfiguration;
+            _eventStoreProducerConfiguration = eventStoreProducerConfiguration;
             return this;
         }
 
-        public ICanSpecifyKafkaBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithKafkaSourceConfiguration(KafkaSourceConfiguration kafkaSourceConfiguration)
+        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreSourceConfiguration(EventStoreSourceConfiguration eventStoreSourceConfiguration)
         {
-            _kafkaSourceConfig = kafkaSourceConfiguration;
+            _eventStoreSourceConfig = eventStoreSourceConfiguration;
             return this;
         }
 
@@ -93,20 +93,20 @@ namespace Obvs.Kafka.Configuration
             return _canAddEndpoint.WithEndpoints(CreateProvider());
         }
 
-        private KafkaServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> CreateProvider()
+        private EventStoreServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> CreateProvider()
         {
-            return new KafkaServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse>(
+            return new EventStoreServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse>(
                 _serviceName, 
-                new KafkaConfiguration(_connectiongString),
-                _kafkaSourceConfig,
-                _kafkaProducerConfig,
+                new EventStoreConfiguration(_connectiongString),
+                _eventStoreSourceConfig,
+                _eventStoreProducerConfiguration,
                 _serializer, 
                 _deserializerFactory, 
                 _assemblyFilter, 
                 _typeFilter);
         }
 
-        public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToKafka(string connectionString)
+        public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString)
         {
             _connectiongString = connectionString;
             return this;

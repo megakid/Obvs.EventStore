@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Reactive.Concurrency;
 using System.Reflection;
+using EventStore.ClientAPI;
 using Obvs.MessageProperties;
 using Obvs.Serialization;
 
-namespace Obvs.Kafka.Configuration
+namespace Obvs.EventStore.Configuration
 {
     public static class DestinationFactory
     {
         public static MessagePublisher<TMessage> CreatePublisher<TMessage>(
-            KafkaConfiguration kafkaConfiguration, 
-            EventStoreProducerConfig producerConfiguration,
+            AsyncLazy<IEventStoreConnection> lazyConnection, 
+            EventStoreProducerConfiguration producerConfiguration,
             string topic, 
             IMessageSerializer messageSerializer, 
             IScheduler scheduler,
@@ -18,7 +19,7 @@ namespace Obvs.Kafka.Configuration
             where TMessage : class
         {
             return new MessagePublisher<TMessage>(
-                kafkaConfiguration,
+                lazyConnection,
                 producerConfiguration,
                 topic,
                 messageSerializer,
@@ -26,8 +27,8 @@ namespace Obvs.Kafka.Configuration
         }
 
         public static MessageSource<TMessage> CreateSource<TMessage, TServiceMessage>(
-            KafkaConfiguration kafkaConfiguration,
-            KafkaSourceConfiguration sourceConfiguration,
+            AsyncLazy<IEventStoreConnection> lazyConnection,
+            EventStoreSourceConfiguration sourceConfiguration,
             string topic, 
             IMessageDeserializerFactory deserializerFactory,
             Func<Assembly, bool> assemblyFilter = null, 
@@ -36,7 +37,7 @@ namespace Obvs.Kafka.Configuration
             where TServiceMessage : class
         {
             return new MessageSource<TMessage>(
-                kafkaConfiguration,
+                lazyConnection,
                 sourceConfiguration,
                 topic,
                 deserializerFactory.Create<TMessage, TServiceMessage>(assemblyFilter, typeFilter));

@@ -63,15 +63,14 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncLazy.cs" />
     <Compile Include="Configuration\DestinationFactory.cs" />
-    <Compile Include="Configuration\KafkaConfigExtensions.cs" />
-    <Compile Include="Configuration\KafkaServiceEndpointProvider.cs" />
-    <Compile Include="Configuration\KafkaFluentConfig.cs" />
-    <Compile Include="Configuration\DisposingServiceEndpoint.cs" />
-    <Compile Include="Configuration\DisposingServiceEndpointClient.cs" />
-    <Compile Include="KafkaConfiguration.cs" />
-    <Compile Include="KafkaProducerConfiguration.cs" />
-    <Compile Include="KafkaSourceConfiguration.cs" />
+    <Compile Include="Configuration\EventStoreConfigExtensions.cs" />
+    <Compile Include="Configuration\EventStoreServiceEndpointProvider.cs" />
+    <Compile Include="Configuration\EventStoreFluentConfig.cs" />
+    <Compile Include="EventStoreConfiguration.cs" />
+    <Compile Include="EventStoreProducerConfiguration.cs" />
+    <Compile Include="EventStoreSourceConfiguration.cs" />
     <Compile Include="MessagePublisher.cs" />
     <Compile Include="MessageSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
