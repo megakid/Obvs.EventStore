@@ -46,13 +46,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\FakeItEasy.1.25.2\lib\net40\FakeItEasy.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=1.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.1.1.0.0\lib\net45\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Reactive.Testing">
       <HintPath>..\packages\Rx-Testing.2.2.5\lib\net45\Microsoft.Reactive.Testing.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.8.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="NLog, Version=3.2.1.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.3.2.1\lib\net45\NLog.dll</HintPath>
@@ -62,17 +66,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="Obvs, Version=2.1.0.30, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Obvs.2.1.0.30\lib\net45\Obvs.dll</HintPath>
+    <Reference Include="Obvs, Version=3.0.0.49, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Obvs.3.0.0.49\lib\net45\Obvs.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Obvs.ActiveMQ, Version=2.0.0.19, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Obvs.ActiveMQ.2.0.0.19\lib\net45\Obvs.ActiveMQ.dll</HintPath>
+    <Reference Include="Obvs.ActiveMQ, Version=3.0.0.37, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Obvs.ActiveMQ.3.0.0.37\lib\net45\Obvs.ActiveMQ.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Obvs.Serialization.Json, Version=2.0.0.11, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Obvs.Serialization.Json.2.0.0.11\lib\net45\Obvs.Serialization.Json.dll</HintPath>
+    <Reference Include="Obvs.Serialization.Json, Version=3.0.0.24, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Obvs.Serialization.Json.3.0.0.24\lib\net45\Obvs.Serialization.Json.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="ParallelExtensionsExtras, Version=1.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MSFT.ParallelExtensionsExtras.1.2.0\lib\ParallelExtensionsExtras.dll</HintPath>

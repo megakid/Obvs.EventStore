@@ -12,24 +12,21 @@ namespace Obvs.EventStore.Configuration
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName);
+        ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName);
     }
 
-
-    public interface ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> : ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>
+    public interface ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> : ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TCommand : class, TMessage
         where TEvent : class, TMessage
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreProducerConfiguration(EventStoreProducerConfiguration eventStoreProducerConfiguration);
-        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreSourceConfiguration(EventStoreSourceConfiguration eventStoreSourceConfiguration);
         ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString);
     }
 
     internal class EventStoreFluentConfig<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> :
-        ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse>,
+        ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse>,
         ICanCreateEndpointAsClientOrServer<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TServiceMessage : class 
@@ -45,15 +42,13 @@ namespace Obvs.EventStore.Configuration
         private IMessageDeserializerFactory _deserializerFactory;
         private Func<Assembly, bool> _assemblyFilter;
         private Func<Type, bool> _typeFilter;
-        private EventStoreProducerConfiguration _eventStoreProducerConfiguration;
-        private EventStoreSourceConfiguration _eventStoreSourceConfig;
 
         public EventStoreFluentConfig(ICanAddEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> canAddEndpoint)
         {
             _canAddEndpoint = canAddEndpoint;
         }
 
-        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName)
+        public ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName)
         {
             _serviceName = serviceName;
             return this;
@@ -63,18 +58,6 @@ namespace Obvs.EventStore.Configuration
         {
             _assemblyFilter = assemblyFilter;
             _typeFilter = typeFilter;
-            return this;
-        }
-
-        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreProducerConfiguration(EventStoreProducerConfiguration eventStoreProducerConfiguration)
-        {
-            _eventStoreProducerConfiguration = eventStoreProducerConfiguration;
-            return this;
-        }
-
-        public ICanSpecifyEventStoreBroker<TMessage, TCommand, TEvent, TRequest, TResponse> WithEventStoreSourceConfiguration(EventStoreSourceConfiguration eventStoreSourceConfiguration)
-        {
-            _eventStoreSourceConfig = eventStoreSourceConfiguration;
             return this;
         }
 
@@ -98,8 +81,6 @@ namespace Obvs.EventStore.Configuration
             return new EventStoreServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse>(
                 _serviceName, 
                 new EventStoreConfiguration(_connectiongString),
-                _eventStoreSourceConfig,
-                _eventStoreProducerConfiguration,
                 _serializer, 
                 _deserializerFactory, 
                 _assemblyFilter, 

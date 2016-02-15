@@ -17,8 +17,6 @@ namespace Obvs.EventStore.Configuration
         private bool _created;
 
         private readonly EventStoreConfiguration _eventStoreConfiguration;
-        private readonly EventStoreSourceConfiguration _sourceConfiguration;
-        private readonly EventStoreProducerConfiguration _producerConfiguration;
         private readonly IMessageSerializer _serializer;
         private readonly IMessageDeserializerFactory _deserializerFactory;
         private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
@@ -28,8 +26,6 @@ namespace Obvs.EventStore.Configuration
 
         public EventStoreServiceEndpointProvider(string serviceName,
                                                EventStoreConfiguration eventStoreConfiguration,
-                                               EventStoreSourceConfiguration sourceConfiguration,
-                                               EventStoreProducerConfiguration producerConfiguration,
                                                IMessageSerializer serializer,
                                                IMessageDeserializerFactory deserializerFactory,
                                                Func<Assembly, bool> assemblyFilter = null,
@@ -37,8 +33,6 @@ namespace Obvs.EventStore.Configuration
             : base(serviceName)
         {
             _eventStoreConfiguration = eventStoreConfiguration;
-            _sourceConfiguration = sourceConfiguration ?? new EventStoreSourceConfiguration();
-            _producerConfiguration = producerConfiguration ?? new EventStoreProducerConfiguration();
             _serializer = serializer;
             _deserializerFactory = deserializerFactory;
             _assemblyFilter = assemblyFilter;
@@ -69,23 +63,22 @@ namespace Obvs.EventStore.Configuration
             _created = true;
 
             return new ServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse>(
-                    CreateSource<TRequest>(_lazyConnection, _sourceConfiguration, RequestsDestination),
-                    CreateSource<TCommand>(_lazyConnection, _sourceConfiguration, CommandsDestination),
-                    CreatePublisher<TEvent>(_lazyConnection, _producerConfiguration, EventsDestination),
-                    CreatePublisher<TResponse>(_lazyConnection, _producerConfiguration, ResponsesDestination),
+                    CreateSource<TRequest>(_lazyConnection, RequestsDestination),
+                    CreateSource<TCommand>(_lazyConnection, CommandsDestination),
+                    CreatePublisher<TEvent>(_lazyConnection, EventsDestination),
+                    CreatePublisher<TResponse>(_lazyConnection, ResponsesDestination),
                     typeof(TServiceMessage));
         }
 
-        private IMessageSource<T> CreateSource<T>(AsyncLazy<IEventStoreConnection> lazyConnection, EventStoreSourceConfiguration sourceConfiguration, string topic) where T : class, TMessage
+        private IMessageSource<T> CreateSource<T>(AsyncLazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
-            return DestinationFactory.CreateSource<T, TServiceMessage>(lazyConnection, sourceConfiguration, topic, _deserializerFactory, _assemblyFilter, _typeFilter);
+            return SourceFactory.Create<T, TServiceMessage>(lazyConnection, topic, _deserializerFactory, _assemblyFilter, _typeFilter);
         }
 
-        private IMessagePublisher<T> CreatePublisher<T>(AsyncLazy<IEventStoreConnection> lazyConnection, EventStoreProducerConfiguration producerConfiguration, string topic) where T : class, TMessage
+        private IMessagePublisher<T> CreatePublisher<T>(AsyncLazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
-            return DestinationFactory.CreatePublisher<T>(lazyConnection, producerConfiguration, topic, _serializer, null, null);
+            return PublisherFactory.Create<T>(lazyConnection, topic, _serializer, null);
         }
-
 
         public override IServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpointClient()
         {
@@ -97,10 +90,10 @@ namespace Obvs.EventStore.Configuration
             _created = true;
 
             return new ServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse>(
-                    CreateSource<TEvent>(_lazyConnection, _sourceConfiguration, EventsDestination),
-                    CreateSource<TResponse>(_lazyConnection, _sourceConfiguration, ResponsesDestination),
-                    CreatePublisher<TRequest>(_lazyConnection, _producerConfiguration, RequestsDestination),
-                    CreatePublisher<TCommand>(_lazyConnection, _producerConfiguration, CommandsDestination),
+                    CreateSource<TEvent>(_lazyConnection, EventsDestination),
+                    CreateSource<TResponse>(_lazyConnection, ResponsesDestination),
+                    CreatePublisher<TRequest>(_lazyConnection, RequestsDestination),
+                    CreatePublisher<TCommand>(_lazyConnection, CommandsDestination),
                     typeof(TServiceMessage));
         }
 

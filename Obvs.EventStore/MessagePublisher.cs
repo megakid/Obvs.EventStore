@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
+using Obvs.EventStore.Serialization;
 using Obvs.MessageProperties;
 using Obvs.Serialization;
 
@@ -15,9 +15,8 @@ namespace Obvs.EventStore
     public class MessagePublisher<TMessage> : IMessagePublisher<TMessage>
         where TMessage : class
     {
-        private readonly string _topic;
+        private readonly string _streamName;
         private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
-        private readonly EventStoreProducerConfiguration _producerConfiguration;
         private readonly IMessageSerializer _serializer;
         private readonly IMessagePropertyProvider<TMessage> _propertyProvider;
 
@@ -26,14 +25,15 @@ namespace Obvs.EventStore
         private long _connected;
 
         private readonly bool _isJsonSerializer;
+        private readonly JsonMessageSerializer _metaDataSerializer;
 
-        public MessagePublisher(AsyncLazy<IEventStoreConnection> lazyConnection, EventStoreProducerConfiguration producerConfiguration, string topic, IMessageSerializer serializer, IMessagePropertyProvider<TMessage> propertyProvider)
+        public MessagePublisher(AsyncLazy<IEventStoreConnection> lazyConnection, string streamName, IMessageSerializer serializer, IMessagePropertyProvider<TMessage> propertyProvider)
         {
+            _metaDataSerializer = new JsonMessageSerializer();
             _lazyConnection = lazyConnection;
-            _topic = topic;
+            _streamName = streamName;
             _serializer = serializer;
             _propertyProvider = propertyProvider;
-            _producerConfiguration = producerConfiguration;
 
             _isJsonSerializer = _serializer.GetType().FullName.ToUpperInvariant().Contains("JSON");
         }
@@ -50,12 +50,12 @@ namespace Obvs.EventStore
 
         private Task Publish(TMessage message)
         {
-            List<KeyValuePair<string, object>> properties = _propertyProvider.GetProperties(message).ToList();
+            var properties = _propertyProvider.GetProperties(message).ToArray();
 
             return Publish(message, properties);
         }
 
-        private async Task Publish(TMessage message, List<KeyValuePair<string, object>> properties)
+        private async Task Publish(TMessage message, KeyValuePair<string, object>[] properties)
         {
             if (_disposed)
             {
@@ -67,7 +67,7 @@ namespace Obvs.EventStore
             var messageType = message.GetType().Name;
 
             byte[] payload;
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 _serializer.Serialize(stream, message);
                 payload = stream.ToArray();
@@ -75,10 +75,20 @@ namespace Obvs.EventStore
 
             var eventStoreConnection = await _lazyConnection;
 
+            byte[] metaData = null;
+            if (properties.Any())
+            {
+                using (var stream = new MemoryStream())
+                {
+                    _metaDataSerializer.Serialize(stream, properties);
+                    metaData = stream.ToArray();
+                }
+            }
+
             await eventStoreConnection.AppendToStreamAsync(
-                _topic,
+                _streamName,
                 ExpectedVersion.Any,
-                new EventData(Guid.NewGuid(), messageType, _isJsonSerializer, payload, null));
+                new EventData(Guid.NewGuid(), messageType, _isJsonSerializer, payload, metaData));
         }
 
         private void Init()

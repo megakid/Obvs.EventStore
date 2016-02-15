@@ -67,12 +67,10 @@ namespace Obvs.EventStore.Tests
             IServiceBus serviceBus = ServiceBus.Configure()
                 .WithEventStoreEndpoints<ITestMessage1>()
                     .Named("Obvs.TestService")
-                    .WithEventStoreSourceConfiguration(new EventStoreSourceConfiguration())
-                    .WithEventStoreProducerConfiguration(new EventStoreProducerConfiguration())
                     .ConnectToEventStore(_eventStoreConnectionString)
                     .SerializedAsJson()
                     .AsClient()
-                //.UsingConsoleLogging()
+                .UsingConsoleLogging()
                 .Create();
 
             Stopwatch sw = Stopwatch.StartNew();
@@ -96,7 +94,7 @@ namespace Obvs.EventStore.Tests
                     .ConnectToEventStore(_eventStoreConnectionString)
                     .SerializedAsJson()
                     .AsServer()
-                //.UsingConsoleLogging()
+                .UsingConsoleLogging()
                 .Create();
 
             double?[] times = new double?[count];
