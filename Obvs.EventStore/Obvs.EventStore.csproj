@@ -55,7 +55,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncLazy.cs" />
     <Compile Include="Configuration\SourceFactory.cs" />
     <Compile Include="Configuration\EventStoreConfigExtensions.cs" />
     <Compile Include="Configuration\EventStoreServiceEndpointProvider.cs" />

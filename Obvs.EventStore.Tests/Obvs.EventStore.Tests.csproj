@@ -105,7 +105,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompareWithActiveMQTests.cs" />
+    <Compile Include="Messages\ITestMessage1.cs" />
+    <Compile Include="Messages\ITestMessage2.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Messages\Test2Command.cs" />
+    <Compile Include="Messages\Test2Event.cs" />
+    <Compile Include="Messages\TestCommand.cs" />
+    <Compile Include="Messages\TestCommand2.cs" />
+    <Compile Include="Messages\TestCommand3.cs" />
+    <Compile Include="Messages\TestEvent.cs" />
+    <Compile Include="Messages\TestRequest.cs" />
+    <Compile Include="Messages\TestResponse.cs" />
+    <Compile Include="TestServiceBus.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

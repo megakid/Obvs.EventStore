@@ -10,8 +10,8 @@ using NLog.Targets;
 using NUnit.Framework;
 using Obvs.Configuration;
 using Obvs.EventStore.Configuration;
+using Obvs.EventStore.Tests.Messages;
 using Obvs.Serialization.Json.Configuration;
-using Obvs.Types;
 
 namespace Obvs.EventStore.Tests
 {
@@ -103,103 +103,6 @@ namespace Obvs.EventStore.Tests
                 dis.Dispose();
                 ((IDisposable) serviceBus).Dispose();
             });
-        }
-
-
-        public interface ITestMessage1 : IMessage
-        {
-        }
-
-        public interface ITestMessage2 : IMessage
-        {
-        }
-
-        public class TestEvent : ITestMessage1, IEvent
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class TestCommand : ITestMessage1, ICommand
-        {
-            public int Id { get; set; }
-
-            public long Ticks { get; set; } = Stopwatch.GetTimestamp();
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class Test2Event : ITestMessage1, IEvent
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class Test2Command : ITestMessage1, ICommand
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class TestCommand2 : ITestMessage1, ICommand
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class TestCommand3 : ITestMessage1, ICommand
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-        }
-
-        public class TestRequest : ITestMessage1, IRequest
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-
-            public string RequestId { get; set; }
-            public string RequesterId { get; set; }
-        }
-
-        public class TestResponse : ITestMessage1, IResponse
-        {
-            public int Id { get; set; }
-
-            public override string ToString()
-            {
-                return string.Format("{0}[Id={1}]", GetType().Name, Id);
-            }
-
-            public string RequestId { get; set; }
-            public string RequesterId { get; set; }
         }
     }
 }

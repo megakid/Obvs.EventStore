@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using EventStore.ClientAPI;
 using Obvs.Serialization;
 
@@ -32,25 +30,34 @@ namespace Obvs.EventStore
             {
                 return Observable.Create<TMessage>(observer =>
                 {
-                    var subject = new Subject<ResolvedEvent>();
-
-                    var subscription = subject
-                        .Select(Deserialize)
-                        .Subscribe(observer);
-
-                    var eventStoreConnection = _lazyConnection.Value;
-
-                    var esStream = eventStoreConnection.SubscribeToStreamAsync(_streamName, true,
-                        (sub, msg) => subject.OnNext(msg), (sub, reason, ex) => subject.OnError(ex)).Result;
-                    
-                    return new CompositeDisposable(subscription, esStream);
+                    return _lazyConnection.Value.SubscribeToStreamAsync(
+                        _streamName, true,
+                        (sub, msg) => TryDeserialize(observer, msg),
+                        (sub, reason, ex) => observer.OnError(new Exception(reason.ToString(), ex))).Result;
                 });
+            }
+        }
+
+        private void TryDeserialize(IObserver<TMessage> observer, ResolvedEvent msg)
+        {
+            try
+            {
+                observer.OnNext(Deserialize(msg));
+            }
+            catch (Exception exception)
+            {
+                observer.OnError(exception);
             }
         }
 
         private TMessage Deserialize(ResolvedEvent message)
         {
-            return _deserializers[message.Event.EventType].Deserialize(new MemoryStream(message.Event.Data));
+            IMessageDeserializer<TMessage> deserializer;
+            if (!_deserializers.TryGetValue(message.Event.EventType, out deserializer))
+            {
+                throw new Exception(string.Format("Missing deserializer for EventType '{0}'", message.Event.EventType));
+            }
+            return deserializer.Deserialize(new MemoryStream(message.Event.Data));
         }
 
         public void Dispose()

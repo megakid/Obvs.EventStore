@@ -15,58 +15,48 @@ namespace Obvs.EventStore.Configuration
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        private bool _created;
-
-        private readonly EventStoreConfiguration _eventStoreConfiguration;
+        private readonly EventStoreConfiguration _configuration;
         private readonly IMessageSerializer _serializer;
         private readonly IMessageDeserializerFactory _deserializerFactory;
-        private readonly Lazy<IEventStoreConnection> _lazyConnection;
 
         private readonly Func<Assembly, bool> _assemblyFilter;
         private readonly Func<Type, bool> _typeFilter;
 
         public EventStoreServiceEndpointProvider(string serviceName,
-                                               EventStoreConfiguration eventStoreConfiguration,
+                                               EventStoreConfiguration configuration,
                                                IMessageSerializer serializer,
                                                IMessageDeserializerFactory deserializerFactory,
                                                Func<Assembly, bool> assemblyFilter = null,
                                                Func<Type, bool> typeFilter = null)
             : base(serviceName)
         {
-            _eventStoreConfiguration = eventStoreConfiguration;
+            _configuration = configuration;
             _serializer = serializer;
             _deserializerFactory = deserializerFactory;
             _assemblyFilter = assemblyFilter;
             _typeFilter = typeFilter;
             
-            if (string.IsNullOrEmpty(_eventStoreConfiguration?.ConnectionString))
+            if (string.IsNullOrEmpty(_configuration?.ConnectionString))
             {
                 throw new InvalidOperationException(string.Format("For service endpoint '{0}', please specify a eventstore connection string to connect to. To do this you can use ConnectToEventStore() per endpoint", serviceName));
             }
-
-            _lazyConnection = new Lazy<IEventStoreConnection>(
-                () =>
-                {
-                    var connection = EventStoreConnection.Create(_eventStoreConfiguration.ConnectionString);
-                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
-                    return connection;
-                }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public override IServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpoint()
         {
-            if (_created)
-            {
-                throw new InvalidOperationException($"{nameof(EventStoreServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse>)} can only be used once");
-            }
-
-            _created = true;
+            var lazyConnection = new Lazy<IEventStoreConnection>(
+                () =>
+                {
+                    var connection = EventStoreConnection.Create(_configuration.ConnectionString);
+                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
+                    return connection;
+                }, LazyThreadSafetyMode.ExecutionAndPublication);
 
             return new ServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse>(
-                    CreateSource<TRequest>(_lazyConnection, RequestsDestination),
-                    CreateSource<TCommand>(_lazyConnection, CommandsDestination),
-                    CreatePublisher<TEvent>(_lazyConnection, EventsDestination),
-                    CreatePublisher<TResponse>(_lazyConnection, ResponsesDestination),
+                    CreateSource<TRequest>(lazyConnection, RequestsDestination),
+                    CreateSource<TCommand>(lazyConnection, CommandsDestination),
+                    CreatePublisher<TEvent>(lazyConnection, EventsDestination),
+                    CreatePublisher<TResponse>(lazyConnection, ResponsesDestination),
                     typeof(TServiceMessage));
         }
 
@@ -82,18 +72,19 @@ namespace Obvs.EventStore.Configuration
 
         public override IServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpointClient()
         {
-            if (_created)
-            {
-                throw new InvalidOperationException($"{nameof(EventStoreServiceEndpointProvider<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse>)} can only be used once");
-            }
-
-            _created = true;
+           var lazyConnection = new Lazy<IEventStoreConnection>(
+                () =>
+                {
+                    var connection = EventStoreConnection.Create(_configuration.ConnectionString);
+                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
+                    return connection;
+                }, LazyThreadSafetyMode.ExecutionAndPublication);
 
             return new ServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse>(
-                    CreateSource<TEvent>(_lazyConnection, EventsDestination),
-                    CreateSource<TResponse>(_lazyConnection, ResponsesDestination),
-                    CreatePublisher<TRequest>(_lazyConnection, RequestsDestination),
-                    CreatePublisher<TCommand>(_lazyConnection, CommandsDestination),
+                    CreateSource<TEvent>(lazyConnection, EventsDestination),
+                    CreateSource<TResponse>(lazyConnection, ResponsesDestination),
+                    CreatePublisher<TRequest>(lazyConnection, RequestsDestination),
+                    CreatePublisher<TCommand>(lazyConnection, CommandsDestination),
                     typeof(TServiceMessage));
         }
 
