@@ -64,29 +64,45 @@ namespace Obvs.EventStore
 
             Init();
 
-            var messageType = message.GetType().Name;
+            var eventData = Serialize(message, properties);
 
-            byte[] payload;
+            await AppendToStreamAsync(eventData);
+        }
+
+        private EventData Serialize(TMessage message, KeyValuePair<string, object>[] properties)
+        {
+            var payload = GetPayload(message);
+            var metaData = GetMetaData(properties);
+            var eventData = new EventData(Guid.NewGuid(), message.GetType().Name, _isJsonSerializer, payload, metaData);
+            return eventData;
+        }
+
+        private async Task<WriteResult> AppendToStreamAsync(EventData eventData)
+        {
+            return await _lazyConnection.Value.AppendToStreamAsync(_streamName, ExpectedVersion.Any, eventData);
+        }
+
+        private byte[] GetMetaData(KeyValuePair<string, object>[] properties)
+        {
+            if (!properties.Any())
+            {
+                return null;
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                _metaDataSerializer.Serialize(stream, properties);
+                return stream.ToArray();
+            }
+        }
+
+        private byte[] GetPayload(TMessage message)
+        {
             using (var stream = new MemoryStream())
             {
                 _serializer.Serialize(stream, message);
-                payload = stream.ToArray();
+                return stream.ToArray();
             }
-
-            byte[] metaData = null;
-            if (properties.Any())
-            {
-                using (var stream = new MemoryStream())
-                {
-                    _metaDataSerializer.Serialize(stream, properties);
-                    metaData = stream.ToArray();
-                }
-            }
-
-            await _lazyConnection.Value.AppendToStreamAsync(
-                _streamName,
-                ExpectedVersion.Any,
-                new EventData(Guid.NewGuid(), messageType, _isJsonSerializer, payload, metaData));
         }
 
         private void Init()
