@@ -61,7 +61,7 @@
     <Compile Include="Configuration\EventStoreServiceEndpointProvider.cs" />
     <Compile Include="Configuration\EventStoreFluentConfig.cs" />
     <Compile Include="Configuration\PublisherFactory.cs" />
-    <Compile Include="EventStoreConfiguration.cs" />
+    <Compile Include="Configuration\EventStoreConfiguration.cs" />
     <Compile Include="MessagePublisher.cs" />
     <Compile Include="MessageSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

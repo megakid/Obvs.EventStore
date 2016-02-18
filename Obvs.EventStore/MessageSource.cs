@@ -14,10 +14,10 @@ namespace Obvs.EventStore
         where TMessage : class
     {
         private readonly IDictionary<string, IMessageDeserializer<TMessage>> _deserializers;
-        private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
+        private readonly Lazy<IEventStoreConnection> _lazyConnection;
         private readonly string _streamName;
 
-        public MessageSource(AsyncLazy<IEventStoreConnection> lazyConnection, 
+        public MessageSource(Lazy<IEventStoreConnection> lazyConnection, 
             string streamName,
             IEnumerable<IMessageDeserializer<TMessage>> deserializers)
         {
@@ -38,7 +38,7 @@ namespace Obvs.EventStore
                         .Select(Deserialize)
                         .Subscribe(observer);
 
-                    var eventStoreConnection = _lazyConnection.Value.Result;
+                    var eventStoreConnection = _lazyConnection.Value;
 
                     var esStream = eventStoreConnection.SubscribeToStreamAsync(_streamName, true,
                         (sub, msg) => subject.OnNext(msg), (sub, reason, ex) => subject.OnError(ex)).Result;

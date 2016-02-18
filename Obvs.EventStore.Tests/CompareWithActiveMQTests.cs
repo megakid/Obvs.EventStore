@@ -16,35 +16,19 @@ using Obvs.Types;
 namespace Obvs.EventStore.Tests
 {
     [TestFixture]
-    public class CompareWithActiveMQTests
+    public class CompareWithActiveMqTests
     {
-        string _eventStoreConnectionString = "ConnectTo=tcp://admin:changeit@192.168.99.100:1113";
-        string _activeMqUri = "failover:(tcp://192.168.99.102:61616)";
-
-         Random _rnd = new Random();
+        private const string EventStoreConnectionString = "ConnectTo=tcp://admin:changeit@127.0.0.1:1113";
         private Stopwatch _sw;
 
         [SetUp]
         public void SetUp()
         {
             var config = new LoggingConfiguration();
-
-            // Step 2. Create targets and add them to the configuration 
-            var consoleTarget = new ColoredConsoleTarget();
-            // Step 3. Set target properties 
-            consoleTarget.Layout = @"${date:format=HH\:mm\:ss} ${logger} ${message}";
-
-            // Uncomment to log to console.
-            //config.AddTarget("console", consoleTarget);
-
-            // Step 4. Define rules
+            var consoleTarget = new ColoredConsoleTarget {Layout = @"${date:format=HH\:mm\:ss} ${logger} ${message}"};
             var rule1 = new LoggingRule("*", LogLevel.Trace, consoleTarget);
             config.LoggingRules.Add(rule1);
-
-            // Step 5. Activate the configuration
-            NLog.LogManager.Configuration = config;
-
-            //kafka4net.Logger.SetupNLog();
+            LogManager.Configuration = config;
         }
 
 
@@ -67,7 +51,7 @@ namespace Obvs.EventStore.Tests
             IServiceBus serviceBus = ServiceBus.Configure()
                 .WithEventStoreEndpoints<ITestMessage1>()
                     .Named("Obvs.TestService")
-                    .ConnectToEventStore(_eventStoreConnectionString)
+                    .ConnectToEventStore(EventStoreConnectionString)
                     .SerializedAsJson()
                     .AsClient()
                 .UsingConsoleLogging()
@@ -90,22 +74,22 @@ namespace Obvs.EventStore.Tests
         {
             IServiceBus serviceBus = ServiceBus.Configure()
                 .WithEventStoreEndpoints<ITestMessage1>()
-                    .Named("Obvs.TestService")
-                    .ConnectToEventStore(_eventStoreConnectionString)
-                    .SerializedAsJson()
-                    .AsServer()
+                .Named("Obvs.TestService")
+                .ConnectToEventStore(EventStoreConnectionString)
+                .SerializedAsJson()
+                .AsServer()
                 .UsingConsoleLogging()
                 .Create();
 
             double?[] times = new double?[count];
-            long[] received = { 0 };
+            long[] received = {0};
 
             var dis = serviceBus.Commands.OfType<TestCommand>().Subscribe(x =>
             {
                 var increment = Interlocked.Increment(ref received[0]);
-                if (increment % 100 == 0)
+                if (increment%100 == 0)
                     Console.WriteLine($"Watcher {i}: {increment} msgs");
-                var ms = (Stopwatch.GetTimestamp() - x.Ticks) / ((double) Stopwatch.Frequency / 1000);
+                var ms = (Stopwatch.GetTimestamp() - x.Ticks)/((double) Stopwatch.Frequency/1000);
                 times[x.Id] = ms;
             });
 
@@ -113,10 +97,11 @@ namespace Obvs.EventStore.Tests
             {
                 SpinWait.SpinUntil(() => Interlocked.Read(ref received[0]) == count);
 
-                Console.WriteLine($"******* Watcher {i}: Total {_sw.ElapsedMilliseconds}ms ({count} msgs), Min/Avg/Max (ms) = {times.Min(d=>d.Value):0}/{times.Average(d => d.Value):0}/{times.Max(d => d.Value):0}");
+                Console.WriteLine(
+                    $"******* Watcher {i}: Total {_sw.ElapsedMilliseconds}ms ({count} msgs), Min/Avg/Max (ms) = {times.Min(d => d.Value):0}/{times.Average(d => d.Value):0}/{times.Max(d => d.Value):0}");
 
                 dis.Dispose();
-                ((IDisposable)serviceBus).Dispose();
+                ((IDisposable) serviceBus).Dispose();
             });
         }
 

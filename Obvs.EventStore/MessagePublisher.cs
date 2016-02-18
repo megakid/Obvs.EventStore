@@ -16,7 +16,7 @@ namespace Obvs.EventStore
         where TMessage : class
     {
         private readonly string _streamName;
-        private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
+        private readonly Lazy<IEventStoreConnection> _lazyConnection;
         private readonly IMessageSerializer _serializer;
         private readonly IMessagePropertyProvider<TMessage> _propertyProvider;
 
@@ -27,7 +27,7 @@ namespace Obvs.EventStore
         private readonly bool _isJsonSerializer;
         private readonly JsonMessageSerializer _metaDataSerializer;
 
-        public MessagePublisher(AsyncLazy<IEventStoreConnection> lazyConnection, string streamName, IMessageSerializer serializer, IMessagePropertyProvider<TMessage> propertyProvider)
+        public MessagePublisher(Lazy<IEventStoreConnection> lazyConnection, string streamName, IMessageSerializer serializer, IMessagePropertyProvider<TMessage> propertyProvider)
         {
             _metaDataSerializer = new JsonMessageSerializer();
             _lazyConnection = lazyConnection;
@@ -73,8 +73,6 @@ namespace Obvs.EventStore
                 payload = stream.ToArray();
             }
 
-            var eventStoreConnection = await _lazyConnection;
-
             byte[] metaData = null;
             if (properties.Any())
             {
@@ -85,7 +83,7 @@ namespace Obvs.EventStore
                 }
             }
 
-            await eventStoreConnection.AppendToStreamAsync(
+            await _lazyConnection.Value.AppendToStreamAsync(
                 _streamName,
                 ExpectedVersion.Any,
                 new EventData(Guid.NewGuid(), messageType, _isJsonSerializer, payload, metaData));

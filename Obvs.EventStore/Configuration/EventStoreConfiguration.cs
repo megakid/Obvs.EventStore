@@ -1,4 +1,4 @@
-namespace Obvs.EventStore
+namespace Obvs.EventStore.Configuration
 {
     public class EventStoreConfiguration
     {

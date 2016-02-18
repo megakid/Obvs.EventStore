@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading;
 using EventStore.ClientAPI;
 using Obvs.Configuration;
 using Obvs.Serialization;
@@ -19,7 +20,7 @@ namespace Obvs.EventStore.Configuration
         private readonly EventStoreConfiguration _eventStoreConfiguration;
         private readonly IMessageSerializer _serializer;
         private readonly IMessageDeserializerFactory _deserializerFactory;
-        private readonly AsyncLazy<IEventStoreConnection> _lazyConnection;
+        private readonly Lazy<IEventStoreConnection> _lazyConnection;
 
         private readonly Func<Assembly, bool> _assemblyFilter;
         private readonly Func<Type, bool> _typeFilter;
@@ -43,14 +44,13 @@ namespace Obvs.EventStore.Configuration
                 throw new InvalidOperationException(string.Format("For service endpoint '{0}', please specify a eventstore connection string to connect to. To do this you can use ConnectToEventStore() per endpoint", serviceName));
             }
 
-            _lazyConnection = new AsyncLazy<IEventStoreConnection>(
-                async () =>
+            _lazyConnection = new Lazy<IEventStoreConnection>(
+                () =>
                 {
-                    var esc = EventStoreConnection.Create(_eventStoreConfiguration.ConnectionString);
-                    await esc.ConnectAsync();
-                    return esc;
-                });
-
+                    var connection = EventStoreConnection.Create(_eventStoreConfiguration.ConnectionString);
+                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
+                    return connection;
+                }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public override IServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpoint()
@@ -70,14 +70,14 @@ namespace Obvs.EventStore.Configuration
                     typeof(TServiceMessage));
         }
 
-        private IMessageSource<T> CreateSource<T>(AsyncLazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
+        private IMessageSource<T> CreateSource<T>(Lazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
             return SourceFactory.Create<T, TServiceMessage>(lazyConnection, topic, _deserializerFactory, _assemblyFilter, _typeFilter);
         }
 
-        private IMessagePublisher<T> CreatePublisher<T>(AsyncLazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
+        private IMessagePublisher<T> CreatePublisher<T>(Lazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
-            return PublisherFactory.Create<T>(lazyConnection, topic, _serializer, null);
+            return PublisherFactory.Create<T>(lazyConnection, topic, _serializer);
         }
 
         public override IServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpointClient()
