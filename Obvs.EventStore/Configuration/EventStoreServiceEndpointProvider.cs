@@ -15,8 +15,6 @@ namespace Obvs.EventStore.Configuration
         where TRequest : class, TMessage
         where TResponse : class, TMessage
     {
-        private bool _created;
-
         private readonly EventStoreConfiguration _configuration;
         private readonly IMessageSerializer _serializer;
         private readonly IMessageDeserializerFactory _deserializerFactory;
