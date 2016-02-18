@@ -8,7 +8,7 @@ namespace Obvs.EventStore.Configuration
     internal static class SourceFactory
     {
         public static MessageSource<TMessage> Create<TMessage, TServiceMessage>(
-            AsyncLazy<IEventStoreConnection> lazyConnection,
+            Lazy<IEventStoreConnection> lazyConnection,
             string streamName, 
             IMessageDeserializerFactory deserializerFactory,
             Func<Assembly, bool> assemblyFilter = null, 
