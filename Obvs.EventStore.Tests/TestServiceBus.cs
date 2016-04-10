@@ -18,6 +18,8 @@ namespace Obvs.EventStore.Tests
             var serviceBus = ServiceBus.Configure()
                 .WithEventStoreEndpoints<ITestMessage1>()
                     .Named("Obvs.EventStore.Test")
+                    .AppendMessageProperties(message => null)
+                    .FilterReceivedMessages(properties => true)
                     .ConnectToEventStore("ConnectTo=tcp://admin:changeit@127.0.0.1:1113")
                     .SerializedAsJson()
                     .AsClientAndServer()

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using EventStore.ClientAPI;
-using Obvs.MessageProperties;
 using Obvs.Serialization;
 
 namespace Obvs.EventStore.Configuration
@@ -11,14 +11,14 @@ namespace Obvs.EventStore.Configuration
             Lazy<IEventStoreConnection> lazyConnection,
             string streamName,
             IMessageSerializer messageSerializer,
-            IMessagePropertyProvider<TMessage> propertyProvider = null)
+            Func<TMessage, Dictionary<string, string>> propertyProvider)
             where TMessage : class
         {
             return new MessagePublisher<TMessage>(
                 lazyConnection,
                 streamName,
                 messageSerializer,
-                propertyProvider ?? new DefaultPropertyProvider<TMessage>());
+                propertyProvider);
         }
     }
 }
