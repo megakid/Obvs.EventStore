@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using EventStore.ClientAPI;
+using Obvs.EventStore.Serialization;
 using Obvs.Serialization;
 
 namespace Obvs.EventStore
@@ -14,14 +15,20 @@ namespace Obvs.EventStore
         private readonly IDictionary<string, IMessageDeserializer<TMessage>> _deserializers;
         private readonly Lazy<IEventStoreConnection> _lazyConnection;
         private readonly string _streamName;
+        private readonly Func<Dictionary<string, string>, bool> _propertyFilter;
+        private readonly JsonPropertySerializer _propertySerializer = new JsonPropertySerializer();
+        private readonly bool _applyFilter;
 
         public MessageSource(Lazy<IEventStoreConnection> lazyConnection, 
             string streamName,
-            IEnumerable<IMessageDeserializer<TMessage>> deserializers)
+            IEnumerable<IMessageDeserializer<TMessage>> deserializers,
+            Func<Dictionary<string, string>, bool> propertyFilter)
         {
             _deserializers = deserializers.ToDictionary(d => d.GetTypeName());
             _lazyConnection = lazyConnection;
             _streamName = streamName;
+            _propertyFilter = propertyFilter;
+            _applyFilter = _propertyFilter != null;
         }
 
         public IObservable<TMessage> Messages
@@ -42,11 +49,26 @@ namespace Obvs.EventStore
         {
             try
             {
-                observer.OnNext(Deserialize(msg));
+                if (_applyFilter && _propertyFilter(GetProperties(msg.Event.Metadata)))
+                {
+                    observer.OnNext(Deserialize(msg));
+                }
             }
             catch (Exception exception)
             {
                 observer.OnError(exception);
+            }
+        }
+
+        private Dictionary<string, string> GetProperties(byte[] metaData)
+        {
+            if (metaData == null || !metaData.Any())
+            {
+                return null;
+            }
+            using (var stream = new MemoryStream(metaData))
+            {
+                return _propertySerializer.Deserialize(stream);
             }
         }
 

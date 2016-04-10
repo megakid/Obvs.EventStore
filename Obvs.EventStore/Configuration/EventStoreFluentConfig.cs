@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Obvs.Configuration;
 using Obvs.Serialization;
@@ -15,7 +16,10 @@ namespace Obvs.EventStore.Configuration
         ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> Named(string serviceName);
     }
 
-    public interface ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> : ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>
+    public interface ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> : 
+        ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, 
+        ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>,
+        ICanSpecifyEventStoreMessageFiltering<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TCommand : class, TMessage
         where TEvent : class, TMessage
@@ -23,6 +27,20 @@ namespace Obvs.EventStore.Configuration
         where TResponse : class, TMessage
     {
         ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString);
+    }
+
+    public interface ICanSpecifyEventStoreMessageFiltering<TMessage, TCommand, TEvent, TRequest, TResponse>
+        where TMessage : class
+        where TCommand : class, TMessage
+        where TEvent : class, TMessage
+        where TRequest : class, TMessage
+        where TResponse : class, TMessage
+    {
+        ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> FilterReceivedMessages(
+            Func<Dictionary<string, string>, bool> propertyFilter);
+
+        ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> AppendMessageProperties(
+            Func<TMessage, Dictionary<string, string>> propertyProvider);
     }
 
     internal class EventStoreFluentConfig<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> :
@@ -42,6 +60,8 @@ namespace Obvs.EventStore.Configuration
         private IMessageDeserializerFactory _deserializerFactory;
         private Func<Assembly, bool> _assemblyFilter;
         private Func<Type, bool> _typeFilter;
+        private Func<Dictionary<string, string>, bool> _propertyFilter;
+        private Func<TMessage, Dictionary<string, string>> _propertyProvider;
 
         public EventStoreFluentConfig(ICanAddEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> canAddEndpoint)
         {
@@ -84,7 +104,9 @@ namespace Obvs.EventStore.Configuration
                 _serializer, 
                 _deserializerFactory, 
                 _assemblyFilter, 
-                _typeFilter);
+                _typeFilter,
+                _propertyFilter,
+                _propertyProvider);
         }
 
         public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString)
@@ -97,6 +119,18 @@ namespace Obvs.EventStore.Configuration
         {
             _serializer = serializer;
             _deserializerFactory = deserializerFactory;
+            return this;
+        }
+
+        public ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> FilterReceivedMessages(Func<Dictionary<string, string>, bool> propertyFilter)
+        {
+            _propertyFilter = propertyFilter;
+            return this;
+        }
+
+        public ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> AppendMessageProperties(Func<TMessage, Dictionary<string, string>> propertyProvider)
+        {
+            _propertyProvider = propertyProvider;
             return this;
         }
     }

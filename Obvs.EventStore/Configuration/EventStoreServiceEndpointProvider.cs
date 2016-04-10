@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using EventStore.ClientAPI;
@@ -21,13 +22,17 @@ namespace Obvs.EventStore.Configuration
 
         private readonly Func<Assembly, bool> _assemblyFilter;
         private readonly Func<Type, bool> _typeFilter;
+        private readonly Func<Dictionary<string, string>, bool> _propertyFilter;
+        private readonly Func<TMessage, Dictionary<string, string>> _propertyProvider;
 
         public EventStoreServiceEndpointProvider(string serviceName,
                                                EventStoreConfiguration configuration,
                                                IMessageSerializer serializer,
                                                IMessageDeserializerFactory deserializerFactory,
                                                Func<Assembly, bool> assemblyFilter = null,
-                                               Func<Type, bool> typeFilter = null)
+                                               Func<Type, bool> typeFilter = null,
+                                               Func<Dictionary<string, string>, bool> propertyFilter = null,
+                                               Func<TMessage, Dictionary<string, string>> propertyProvider = null)
             : base(serviceName)
         {
             _configuration = configuration;
@@ -35,7 +40,9 @@ namespace Obvs.EventStore.Configuration
             _deserializerFactory = deserializerFactory;
             _assemblyFilter = assemblyFilter;
             _typeFilter = typeFilter;
-            
+            _propertyFilter = propertyFilter;
+            _propertyProvider = propertyProvider;
+
             if (string.IsNullOrEmpty(_configuration?.ConnectionString))
             {
                 throw new InvalidOperationException(string.Format("For service endpoint '{0}', please specify a eventstore connection string to connect to. To do this you can use ConnectToEventStore() per endpoint", serviceName));
@@ -62,12 +69,12 @@ namespace Obvs.EventStore.Configuration
 
         private IMessageSource<T> CreateSource<T>(Lazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
-            return SourceFactory.Create<T, TServiceMessage>(lazyConnection, topic, _deserializerFactory, _assemblyFilter, _typeFilter);
+            return SourceFactory.Create<T, TServiceMessage>(lazyConnection, topic, _deserializerFactory, _propertyFilter, _assemblyFilter, _typeFilter);
         }
 
         private IMessagePublisher<T> CreatePublisher<T>(Lazy<IEventStoreConnection> lazyConnection, string topic) where T : class, TMessage
         {
-            return PublisherFactory.Create<T>(lazyConnection, topic, _serializer);
+            return PublisherFactory.Create<T>(lazyConnection, topic, _serializer, _propertyProvider);
         }
 
         public override IServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpointClient()
