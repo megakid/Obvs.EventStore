@@ -25,7 +25,7 @@ namespace Obvs.EventStore
 
         private readonly bool _isJsonSerializer;
         private readonly JsonPropertySerializer _propertySerializer;
-        private bool _setProperties;
+        private readonly bool _setProperties;
 
         public MessagePublisher(Lazy<IEventStoreConnection> lazyConnection, string streamName, IMessageSerializer serializer, 
             Func<TMessage, Dictionary<string, string>> propertyProvider)

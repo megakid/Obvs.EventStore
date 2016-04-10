@@ -64,7 +64,7 @@ namespace Obvs.EventStore
         {
             if (metaData == null || !metaData.Any())
             {
-                return new Dictionary<string, string>();
+                return null;
             }
             using (var stream = new MemoryStream(metaData))
             {
