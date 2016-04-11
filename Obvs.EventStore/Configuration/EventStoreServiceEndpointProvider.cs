@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using EventStore.ClientAPI;
 using Obvs.Configuration;
+using Obvs.EventStore.Serialization;
 using Obvs.Serialization;
 
 namespace Obvs.EventStore.Configuration
@@ -24,15 +26,14 @@ namespace Obvs.EventStore.Configuration
         private readonly Func<Type, bool> _typeFilter;
         private readonly Func<Dictionary<string, string>, bool> _propertyFilter;
         private readonly Func<TMessage, Dictionary<string, string>> _propertyProvider;
+        private readonly List<Tuple<string, Type>> _projectionStreams;
 
-        public EventStoreServiceEndpointProvider(string serviceName,
-                                               EventStoreConfiguration configuration,
-                                               IMessageSerializer serializer,
-                                               IMessageDeserializerFactory deserializerFactory,
-                                               Func<Assembly, bool> assemblyFilter = null,
-                                               Func<Type, bool> typeFilter = null,
-                                               Func<Dictionary<string, string>, bool> propertyFilter = null,
-                                               Func<TMessage, Dictionary<string, string>> propertyProvider = null)
+        public EventStoreServiceEndpointProvider(string serviceName, EventStoreConfiguration configuration, 
+            IMessageSerializer serializer, IMessageDeserializerFactory deserializerFactory, 
+            Func<Assembly, bool> assemblyFilter = null, Func<Type, bool> typeFilter = null, 
+            Func<Dictionary<string, string>, bool> propertyFilter = null, 
+            Func<TMessage, Dictionary<string, string>> propertyProvider = null, 
+            List<Tuple<string, Type>> projectionStreams = null)
             : base(serviceName)
         {
             _configuration = configuration;
@@ -42,6 +43,7 @@ namespace Obvs.EventStore.Configuration
             _typeFilter = typeFilter;
             _propertyFilter = propertyFilter;
             _propertyProvider = propertyProvider;
+            _projectionStreams = projectionStreams ?? new List<Tuple<string, Type>>();
 
             if (string.IsNullOrEmpty(_configuration?.ConnectionString))
             {
@@ -88,12 +90,32 @@ namespace Obvs.EventStore.Configuration
                 }, LazyThreadSafetyMode.ExecutionAndPublication);
 
             return new ServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse>(
-                    CreateSource<TEvent>(lazyConnection, EventsDestination),
+                    CreateEventsSource(lazyConnection),
                     CreateSource<TResponse>(lazyConnection, ResponsesDestination),
                     CreatePublisher<TRequest>(lazyConnection, RequestsDestination),
                     CreatePublisher<TCommand>(lazyConnection, CommandsDestination),
                     typeof(TServiceMessage));
         }
 
+        private IMessageSource<TEvent> CreateEventsSource(Lazy<IEventStoreConnection> lazyConnection)
+        {
+            var eventSources = new List<IMessageSource<TEvent>>
+            {
+                CreateSource<TEvent>(lazyConnection, EventsDestination)
+            };
+            eventSources.AddRange(
+                _projectionStreams.Select(projectionStream =>
+                    new MessageSource<TEvent>(lazyConnection,
+                        projectionStream.Item1,
+                        new[]
+                        {
+                            new JsonProjectionDeserializer<TEvent>(projectionStream.Item2)
+                        },
+                        _propertyFilter)));
+
+            return eventSources.Count == 1
+                ? eventSources.Single()
+                : new MergedMessageSource<TEvent>(eventSources);
+        }
     }
 }
