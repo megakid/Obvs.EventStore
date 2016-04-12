@@ -125,7 +125,8 @@ namespace Obvs.EventStore.Configuration
                 _typeFilter,
                 _propertyFilter,
                 _propertyProvider,
-                _projectionStreams);
+                _projectionStreams,
+                EventStoreFluentConfigContext.SharedConnection);
         }
 
         public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString)

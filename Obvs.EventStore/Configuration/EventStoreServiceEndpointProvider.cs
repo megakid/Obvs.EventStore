@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using EventStore.ClientAPI;
 using Obvs.Configuration;
 using Obvs.EventStore.Serialization;
@@ -26,6 +25,7 @@ namespace Obvs.EventStore.Configuration
         private readonly Func<Type, bool> _typeFilter;
         private readonly Func<Dictionary<string, string>, bool> _propertyFilter;
         private readonly Func<TMessage, Dictionary<string, string>> _propertyProvider;
+        private readonly Lazy<IEventStoreConnection> _sharedConnection;
         private readonly List<Tuple<string, Type>> _projectionStreams;
 
         public EventStoreServiceEndpointProvider(string serviceName, EventStoreConfiguration configuration, 
@@ -33,7 +33,8 @@ namespace Obvs.EventStore.Configuration
             Func<Assembly, bool> assemblyFilter = null, Func<Type, bool> typeFilter = null, 
             Func<Dictionary<string, string>, bool> propertyFilter = null, 
             Func<TMessage, Dictionary<string, string>> propertyProvider = null, 
-            List<Tuple<string, Type>> projectionStreams = null)
+            List<Tuple<string, Type>> projectionStreams = null, 
+            Lazy<IEventStoreConnection> sharedConnection = null)
             : base(serviceName)
         {
             _configuration = configuration;
@@ -43,6 +44,7 @@ namespace Obvs.EventStore.Configuration
             _typeFilter = typeFilter;
             _propertyFilter = propertyFilter;
             _propertyProvider = propertyProvider;
+            _sharedConnection = sharedConnection;
             _projectionStreams = projectionStreams ?? new List<Tuple<string, Type>>();
 
             if (string.IsNullOrEmpty(_configuration?.ConnectionString))
@@ -53,13 +55,7 @@ namespace Obvs.EventStore.Configuration
 
         public override IServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpoint()
         {
-            var lazyConnection = new Lazy<IEventStoreConnection>(
-                () =>
-                {
-                    var connection = EventStoreConnection.Create(_configuration.ConnectionString);
-                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
-                    return connection;
-                }, LazyThreadSafetyMode.ExecutionAndPublication);
+            var lazyConnection = _sharedConnection ?? EventStoreConnection.Create(_configuration.ConnectionString).AsLazy();
 
             return new ServiceEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse>(
                     CreateSource<TRequest>(lazyConnection, RequestsDestination),
@@ -81,13 +77,7 @@ namespace Obvs.EventStore.Configuration
 
         public override IServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse> CreateEndpointClient()
         {
-           var lazyConnection = new Lazy<IEventStoreConnection>(
-                () =>
-                {
-                    var connection = EventStoreConnection.Create(_configuration.ConnectionString);
-                    connection.ConnectAsync().Wait(TimeSpan.FromSeconds(10));
-                    return connection;
-                }, LazyThreadSafetyMode.ExecutionAndPublication);
+           var lazyConnection = _sharedConnection ?? EventStoreConnection.Create(_configuration.ConnectionString).AsLazy();
 
             return new ServiceEndpointClient<TMessage, TCommand, TEvent, TRequest, TResponse>(
                     CreateEventsSource(lazyConnection),
