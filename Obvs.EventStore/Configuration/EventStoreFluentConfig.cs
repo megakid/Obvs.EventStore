@@ -19,7 +19,8 @@ namespace Obvs.EventStore.Configuration
     public interface ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> : 
         ICanSpecifyEventStoreServiceName<TMessage, TCommand, TEvent, TRequest, TResponse>, 
         ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse>,
-        ICanSpecifyEventStoreMessageFiltering<TMessage, TCommand, TEvent, TRequest, TResponse>
+        ICanSpecifyEventStoreMessageFiltering<TMessage, TCommand, TEvent, TRequest, TResponse>,
+        ICanSpecifyEventStoreProjectionSubscribe<TMessage, TCommand, TEvent, TRequest, TResponse>
         where TMessage : class
         where TCommand : class, TMessage
         where TEvent : class, TMessage
@@ -43,6 +44,22 @@ namespace Obvs.EventStore.Configuration
             Func<TMessage, Dictionary<string, string>> propertyProvider);
     }
 
+    public interface ICanSpecifyEventStoreProjectionSubscribe<TMessage, TCommand, TEvent, TRequest, TResponse>
+        where TMessage : class
+        where TCommand : class, TMessage
+        where TEvent : class, TMessage
+        where TRequest : class, TMessage
+        where TResponse : class, TMessage
+    {
+        /// <summary>
+        /// Subscribe to an EventStore projection stream and merge it into the Events observable.
+        /// </summary>
+        /// <typeparam name="T">Type to deserialize to. This must be a TEvent as it is merged into Events observable.</typeparam>
+        /// <param name="streamName">Name of the projection stream in EventStore</param>
+        /// <returns></returns>
+        ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> SubscribeToProjectionStream<T>(string streamName) where T : TEvent;
+    }
+
     internal class EventStoreFluentConfig<TServiceMessage, TMessage, TCommand, TEvent, TRequest, TResponse> :
         ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse>,
         ICanCreateEndpointAsClientOrServer<TMessage, TCommand, TEvent, TRequest, TResponse>
@@ -62,6 +79,7 @@ namespace Obvs.EventStore.Configuration
         private Func<Type, bool> _typeFilter;
         private Func<Dictionary<string, string>, bool> _propertyFilter;
         private Func<TMessage, Dictionary<string, string>> _propertyProvider;
+        private readonly List<Tuple<string, Type>> _projectionStreams = new List<Tuple<string, Type>>();
 
         public EventStoreFluentConfig(ICanAddEndpoint<TMessage, TCommand, TEvent, TRequest, TResponse> canAddEndpoint)
         {
@@ -106,7 +124,8 @@ namespace Obvs.EventStore.Configuration
                 _assemblyFilter, 
                 _typeFilter,
                 _propertyFilter,
-                _propertyProvider);
+                _propertyProvider,
+                _projectionStreams);
         }
 
         public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString)
@@ -131,6 +150,12 @@ namespace Obvs.EventStore.Configuration
         public ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> AppendMessageProperties(Func<TMessage, Dictionary<string, string>> propertyProvider)
         {
             _propertyProvider = propertyProvider;
+            return this;
+        }
+
+        public ICanSpecifyEventStoreConnection<TMessage, TCommand, TEvent, TRequest, TResponse> SubscribeToProjectionStream<T>(string streamName) where T : TEvent
+        {
+            _projectionStreams.Add(Tuple.Create(streamName, typeof(T)));
             return this;
         }
     }

@@ -77,7 +77,12 @@ namespace Obvs.EventStore
             IMessageDeserializer<TMessage> deserializer;
             if (!_deserializers.TryGetValue(message.Event.EventType, out deserializer))
             {
-                throw new Exception(string.Format("Missing deserializer for EventType '{0}'", message.Event.EventType));
+                if (_deserializers.Count > 1)
+                {
+                    throw new Exception(string.Format("Missing deserializer for EventType '{0}'", message.Event.EventType));
+                }
+                // special case for projection streams
+                deserializer = _deserializers.Values.Single();
             }
             return deserializer.Deserialize(new MemoryStream(message.Event.Data));
         }
