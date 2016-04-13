@@ -28,6 +28,7 @@ namespace Obvs.EventStore.Configuration
         where TResponse : class, TMessage
     {
         ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString);
+        ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> UseSharedConnection();
     }
 
     public interface ICanSpecifyEventStoreMessageFiltering<TMessage, TCommand, TEvent, TRequest, TResponse>
@@ -131,10 +132,23 @@ namespace Obvs.EventStore.Configuration
 
         public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> ConnectToEventStore(string connectionString)
         {
+            if (EventStoreFluentConfigContext.SharedConnection != null)
+            {
+                throw new InvalidOperationException("Please declare this endpoint outside a shared connection scope.");
+            }
             _connectiongString = connectionString;
             return this;
         }
-        
+
+        public ICanSpecifyEndpointSerializers<TMessage, TCommand, TEvent, TRequest, TResponse> UseSharedConnection()
+        {
+            if (EventStoreFluentConfigContext.SharedConnection == null)
+            {
+                throw new InvalidOperationException("Please declare this endpoint within a shared connection scope, using method WithEventStoreSharedConnectionScope().");
+            }
+            return this;
+        }
+
         public ICanCreateEndpointAsClientOrServer<TMessage, TCommand, TEvent, TRequest, TResponse> SerializedWith(IMessageSerializer serializer, IMessageDeserializerFactory deserializerFactory)
         {
             _serializer = serializer;
