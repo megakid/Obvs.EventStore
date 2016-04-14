@@ -22,7 +22,7 @@ namespace Obvs.EventStore.Tests
                         .Named("Obvs.EventStore.Test")
                         .AppendMessageProperties(message => null)
                         .FilterReceivedMessages(properties => true)
-                        .ConnectToEventStore("ConnectTo=tcp://admin:changeit@127.0.0.1:1113")
+                        .UseSharedConnection()
                         .SerializedAsJson()
                         .AsClientAndServer())
                 .UsingConsoleLogging()
