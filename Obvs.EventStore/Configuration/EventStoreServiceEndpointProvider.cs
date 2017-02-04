@@ -47,7 +47,7 @@ namespace Obvs.EventStore.Configuration
             _sharedConnection = sharedConnection;
             _projectionStreams = projectionStreams ?? new List<Tuple<string, Type>>();
 
-            if (string.IsNullOrEmpty(_configuration?.ConnectionString))
+            if (sharedConnection == null && string.IsNullOrEmpty(_configuration?.ConnectionString))
             {
                 throw new InvalidOperationException(string.Format("For service endpoint '{0}', please specify a eventstore connection string to connect to. To do this you can use ConnectToEventStore() per endpoint", serviceName));
             }

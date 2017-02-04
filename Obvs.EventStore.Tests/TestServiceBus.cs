@@ -1,8 +1,8 @@
 ﻿using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
-using Obvs.ActiveMQ.Configuration;
 using Obvs.Configuration;
 using Obvs.EventStore.Configuration;
 using Obvs.EventStore.Tests.Messages;
@@ -14,7 +14,7 @@ namespace Obvs.EventStore.Tests
     public class TestServiceBus
     {
         [Test, Explicit]
-        public async void TestServiceBusWithLocalEventStore()
+        public async Task TestServiceBusWithLocalEventStore()
         {
             var serviceBus = ServiceBus.Configure()
                 .WithEventStoreSharedConnectionScope("ConnectTo=tcp://admin:changeit@127.0.0.1:1113", config => config
