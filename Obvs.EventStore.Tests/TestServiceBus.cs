@@ -1,6 +1,7 @@
 ﻿using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Obvs.Configuration;
 using Obvs.EventStore.Configuration;
@@ -13,16 +14,17 @@ namespace Obvs.EventStore.Tests
     public class TestServiceBus
     {
         [Test, Explicit]
-        public async void TestServiceBusWithLocalEventStore()
+        public async Task TestServiceBusWithLocalEventStore()
         {
             var serviceBus = ServiceBus.Configure()
-                .WithEventStoreEndpoints<ITestMessage1>()
-                    .Named("Obvs.EventStore.Test")
-                    .AppendMessageProperties(message => null)
-                    .FilterReceivedMessages(properties => true)
-                    .ConnectToEventStore("ConnectTo=tcp://admin:changeit@127.0.0.1:1113")
-                    .SerializedAsJson()
-                    .AsClientAndServer()
+                .WithEventStoreSharedConnectionScope("ConnectTo=tcp://admin:changeit@127.0.0.1:1113", config => config
+                    .WithEventStoreEndpoints<ITestMessage1>()
+                        .Named("Obvs.EventStore.Test")
+                        .AppendMessageProperties(message => null)
+                        .FilterReceivedMessages(properties => true)
+                        .UseSharedConnection()
+                        .SerializedAsJson()
+                        .AsClientAndServer())
                 .UsingConsoleLogging()
                 .Create();
 

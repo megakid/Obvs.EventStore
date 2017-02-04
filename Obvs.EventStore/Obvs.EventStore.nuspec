@@ -5,8 +5,8 @@
     <version>$version$</version>
     <title>$title$</title>
     <authors>$author$</authors>
-    <description>EventStore transport support for Obvs</description>
+    <description>EventStore transport extension for Obvs</description>
     <copyright>Copyright 2015</copyright>
-    <releaseNotes>Added ability to configure ServiceBus with projection stream subscriptions, which will be merged into the Events observable.</releaseNotes>
+    <releaseNotes>Fixed bug in Shared Connection logic, and updated to EventStore client 3.9.4.</releaseNotes>
   </metadata>
 </package>
