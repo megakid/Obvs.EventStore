@@ -16,8 +16,9 @@ namespace Obvs.EventStore.Tests
         [Test, Explicit]
         public async Task TestServiceBusWithLocalEventStore()
         {
+            // run EventStore on Docker and then edit below for local address:port that maps to 1113
             var serviceBus = ServiceBus.Configure()
-                .WithEventStoreSharedConnectionScope("ConnectTo=tcp://admin:changeit@127.0.0.1:1113", config => config
+                .WithEventStoreSharedConnectionScope("ConnectTo=tcp://admin:changeit@192.168.99.100:32777", config => config
                     .WithEventStoreEndpoints<ITestMessage1>()
                         .Named("Obvs.EventStore.Test")
                         .AppendMessageProperties(message => null)
